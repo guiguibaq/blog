@@ -1,7 +1,7 @@
 ---
-title: 🎉 Easily create your own simple yet highly customizable blog
-summary: Take full control of your personal brand and privacy by migrating away from the big tech platforms!
-date: 2023-10-27
+title: Diggest of "The math behind how LLMs are trained and served"
+summary: 
+date: 2026-07-01
 
 # Featured image
 # Place an image named `featured.jpg/png` in this page's folder and customize its options here.
@@ -10,77 +10,119 @@ image:
 
 authors:
   - me
-  - Ted
-
-tags:
-  - Academic
-  - Hugo Blox
-  - Markdown
 ---
 
-Welcome 👋
+In this podcast Dwarkesh and Reiner deduce key parameters of how inference is run at frontier labs (eg batch size, parallelism, size of models) from simple cost analysis.
 
-{{< toc mobile_only=true is_open=true >}}
+The episode is very dense in information, and assumes prior knowledge of the inner workings of LLMs.
 
-## Overview
+This post is a digested version with additional context when required.
 
-1. The Hugo Blox website builder for Hugo, along with its starter templates, is designed for professional creators, educators, and teams/organizations - although it can be used to create any kind of site
-2. The template can be modified and customised to suit your needs. It's a good platform for anyone looking to take control of their data and online identity whilst having the convenience to start off with a **no-code solution (write in Markdown and customize with YAML parameters)** and having **flexibility to later add even deeper personalization with HTML and CSS**
-3. You can work with all your favourite tools and apps with hundreds of plugins and integrations to speed up your workflows, interact with your readers, and much more
+Basics: time for generating one token
 
-[//]: # '[![The template is mobile first with a responsive design to ensure that your site looks stunning on every device.](https://raw.githubusercontent.com/HugoBlox/kit/main/templates/academic-cv/preview.png)](https://hugoblox.com)'
+The whole episode is based on two key equations that estimate how much time is required to compute one token at inference.
 
-### Get Started
+There are two equations because to run inference the GPU needs to do two things:
+* Memory: load the parameters it needs of the models from VRAM to SRAM. todo
+* Compute: actually compute the forward pass 
 
-- 👉 [**Create a new site**](https://hugoblox.com/templates/)
-- 📚 [**Personalize your site**](https://docs.hugoblox.com/)
-- 💬 [Chat with the **Hugo Blox community**](https://discord.gg/z8wNYzb) or [**Hugo community**](https://discourse.gohugo.io)
-- 🐦 Twitter: [@GoOwnable](https://x.com/GoOwnable)  #MadeWithHugoBlox
-- 💡 [Request a **feature** or report a **bug** for _Hugo Blox_](https://github.com/HugoBlox/kit/issues)
-- ⬆️ **Updating Hugo Blox?** View the [Update Guide](https://docs.hugoblox.com/reference/update/) and [Release Notes](https://github.com/HugoBlox/kit/releases)
+Let’s double click on the memory:
+* Loading parameters of the model from VRAM to SRAM: todo
+* Loading KV cache: to generate a sequence (the, cat, sits, on, the), we generate one token at a time, so (the), (the, cat) etc. That creates a lot of repetition. To avoid this, it is cached: key=array of token, values=arr of v. Todo
 
-## Crowd-funded open-source software
+Now let’s look at the compute time:
+* Compute time is the number of operations required by a forward pass, multiplied by the time it takes to compute one operation
+* The forward pass is a bunch of linear layers, attention layers and non linearities. The non linearities are very fast, and the most of the attention is cached, therefore it’s common practice to only count time spent on the linear layers. A linear layer is a matrix multiply: multiplying a data matrix of size (B, in) by a matrix of weights of size (in, out) takes 2 * B * in * out operations, or 2 * B * Nparams. 
+* Modern LLMs use Mixture of Experts, where the Feed Foward after the attention is split into parallel networks. There a (learnt) gate that routes each incoming token to the expert(s) that should take it. The result is then aggregated. So with MOEs a forward pass requires N active parameters instead of N parameters. Todo: insert typical numbers. Todo: is it done in parallel? 
 
-To help us develop this template and software sustainably under the MIT license, we ask all individuals and businesses that use it to help support its ongoing maintenance and development via sponsorship.
+Memory fetching and compute happen concurrently, so the time for one forward pass is the max of both (instead of the sum if it was done concurrently):
 
-### [❤️ Click here to become a sponsor and help support Hugo Blox's future ❤️](https://hugoblox.com/sponsor/)
+T = max ( t compute, t memory)
 
-As a token of appreciation for sponsoring, you can **unlock [these](https://hugoblox.com/sponsor/) awesome rewards and extra features 🦄✨**
+If the t compute > t memory, we say that the system is “compute bound”, if that’s the opposite we say it’s “memory bound”
 
-## Ecosystem
+Great, we now have all the basics covered, and we understand the two fundamental equations of this podcast!
 
-- **[Bibtex To Markdown](https://github.com/GetRD/academic-file-converter):** Automatically import publications from BibTeX
+The rest of the discussion is where Dwarkesh and Reiner actually use those two equations to make educated guesses on the parameters of LLMs at big labs.
 
-## Inspiration
+Influence of batch size on costs
 
-[Learn what other **creators**](https://hugoblox.com/creators/) are building with this template.
+Let’s double click on the notion of batch at inference:
+* At training time a batch is a subset of the training data
+* At inference time, we can batch user requests together: we wait for instance 20 ms, get all the user requests at this time, and batch them together. To be exact, it’s not quite the user requests that are batched, but the sentences that need new tokens.
 
-## Features
+The more we wait to cluster user requests together, the larger the batch size we get - but does larger batch leads to economies of scale? For instance in Gemini one can pay for faster inference (which presumably is linked to lower batch size); can we imagine the opposite, and have a “Gemini slow” mode where the price per token is lower? Turns out, no: enter equation and graph.
 
-- **Page builder** - Create _anything_ with no-code [**blocks**](https://hugoblox.com/blocks/) and [**elements**](https://docs.hugoblox.com/reference/markdown/)
-- **Edit any type of content** - Blog posts, publications, talks, slides, projects, and more!
-- **Create content** in [**Markdown**](https://docs.hugoblox.com/reference/markdown/), [**Jupyter**](https://docs.hugoblox.com/getting-started/cms/), or [**RStudio**](https://docs.hugoblox.com/getting-started/cms/)
-- **Plugin System** - Fully customizable [**color** and **font themes**](https://docs.hugoblox.com/getting-started/customize/)
-- **Display Code and Math** - Code syntax highlighting and LaTeX math supported
-- **Integrations** - [Google Analytics](https://analytics.google.com), [Disqus commenting](https://disqus.com), Maps, Contact Forms, and more!
-- **Beautiful Site** - Simple and refreshing one-page design
-- **Industry-Leading SEO** - Help get your website found on search engines and social media
-- **Media Galleries** - Display your images and videos with captions in a customizable gallery
-- **Mobile Friendly** - Look amazing on every screen with a mobile friendly version of your site
-- **Multi-language** - 35+ language packs including English, 中文, and Português
-- **Multi-user** - Each author gets their own profile page
-- **Privacy Pack** - Assists with GDPR
-- **Stand Out** - Bring your site to life with animation, parallax backgrounds, and scroll effects
-- **One-Click Deployment** - No servers. No databases. Only files.
+Can we estimate the ideal batch size? In the ideal case, we have the system never idle: both memory and compute run at the same speed: solve equation.
 
-## Themes
+t compute = t memory
+B Nactive / flops = Ntotal / mem band 
+Flops / mem band = B Nactive/ Ntotal 
+=> B ~ 21k
 
-Hugo Blox and its templates come with **automatic day (light) and night (dark) mode** built-in. Visitors can choose their preferred mode by clicking the sun/moon icon in the header.
+15 ms ??? Don’t understand 
 
-[Choose a stunning **theme** and **font**](https://docs.hugoblox.com/getting-started/customize/) for your site. Themes are fully customizable.
+Multi GPU set ups
+There are several types of GPU parallelism worth noting:
+* Data parallelism: classic sharding - requests are sent to different GPU / GPU clusters and executed in parallel.
+* Tensor parallelism: not discussed in this podcast, but widely used in production - the weights of each matrix are split across GPUs, each GPU does a part of the computation, then combine their output in an all to all communication.
+* Pipelining: the neural network is split into sequential chunks, which are executed one after the other
+* Expert parallelism: experts are distributed across GPUs
 
-## License
+This podcast focuses on pipelining and expert parallelism.
 
+Pipelining 
 
+It broadly claims that pipelining contributes to solving the memory capacity, but that it should be avoided if possible.
 
-Released under the [MIT](https://github.com/HugoBlox/kit/blob/main/LICENSE.md) license.
+Let’s first explore its effect on latency - pipeline makes latency worse:
+* Each step of the pipeline is executed sequentially, which means that in the naive setup the GPUs are waiting idle for other GPUs to solve their part of the computation. At inference, we can solve this by stacking batches in parallel (but it will have an effect on memory, see later). However at training time, we need to wait for the gradients so there is no solution.
+* The bandwidth to move from one cluster to the next is slow (8x more than within the same cluster). In the podcast they estimate it to be 10ms (which is huge given that one forward pass is estimated to take 20ms)
+
+Now let’s see to which extent pipelining helps with memory capacity:
+* The parameters are split between cluster, so the N params are divided by the number of clusters
+* However, the KV cache isn’t: each GPU should store the KV cache for bla-bla-bla
+
+Therefore pipelining seems to be something to avoid if necessary, and Ilya said “pipelining is not wise”
+
+Expert parallelism and GPU cluster architecture 
+
+Experts are distributed across GPUs, which leads to two all-to-all communication. However this communication is one fast bandwidth, so it’s not a bottleneck.
+
+At this point, Reiner explains a bit how NVIDIA GPU clusters are set up: there is a common VRAM (about ~todo Gb) and ~64 GPUs. The VRAM is accessible to all GPU so it can be thought as shared memory. When GPU load data from VRAM, they do it in parallel, so the cluster memory bandwidth really is the GPU bandwidth * the number of GPU. Increasing the number of GPU is actually where most of the gains in memory bandwidth come from - NVIDIA is working hard to increase the number of GPUs per cluster, and next generation should have ~todo
+
+Chinchilla laws, updated for inference
+
+The compute budget to train a model is broadly model size * number of tokens in the training data. If we have a given budget, how should we split it between model size and training data?
+
+Labs used to favour huge model size, but the Chinchilla paper changed everything: it showed empirically that the optimal is obtained at token number = 20 x model parameters.
+
+However, Reiner and Dwarkesh explain we are now in a “new Chinchilla” optimal, to take into account that the compute budget is now split between 3 parts: pre training, post training and inference.
+
+Broadly soaking, whichever model we get from pre training will have to be served at scale, so we’d rather serve a smaller model to reduce inference cost, even if that means training it for longer.
+
+Reiner does a back of the envelope calculation where he assumes that labs spend as much compute in pre training, RL training and inference. This broadly means that the number of tokens in pre training equals the number of tokens at inference. Let’s do some quick maths:
+
+Inference data = 500M/s * 2 months = 2.6 10^15
+Training data = 150 T (this number is confidential but Dwarkesh heard this from his connections at Anthropic)
+
+Those two are roughly equal! (Which validate the theory)
+
+And if we compare to Chinchila optimal: 100B * 20 = 2T
+
+So frontier models operate on 100x more training data than Chinchila optimal.
+
+Context length
+
+Gemini has a pricing structure where you pay 50% more after 200k context length.
+
+Cost increases with context length.
+
+Solving for bytes per token we get ~2kB
+
+Would that make sense? Well bytes per token = 2 bytes * 2 (key and query)* Nlayers * d heads * nb heads ~ 2kB
+
+I think Reiner is missing the bytes here, but we’re looking at orders of magnitude anyway.
+
+So it makes sense!
+
