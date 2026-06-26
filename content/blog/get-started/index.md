@@ -73,60 +73,12 @@ There are several types of GPU parallelism worth noting:
 * **Pipelining**: the neural network is split into sequential chunks, which are executed one after the other. Dwarkesh and Reiner discuss it, and explain why it is avoided when possible.
 * **Expert parallelism**: experts are distributed across GPUs.
 
-This podcast focuses on pipelining and expert parallelism.
+Let's start with **pipelining**.
 
-Pipelining 
+Pipelining contributes to solving the momeory capacity, but it has a tool on latency.
 
-It broadly claims that pipelining contributes to solving the memory capacity, but that it should be avoided if possible.
+Let's first explore its effect on **latency**:
+* Each step of the pipeline is executed sequentially, which means that in the naive setup the GPUs are waiting idle for other GPUs to solve their part of the computation. At inference, we can solve this by stacking batches in parallel (see graph below) - however as we'll see this has a consequence on memory usage. At training time, because we have to wait on the gradients, unfortunately there is no other solution than having the GPUs idle for some time (see graph below).
+* Moving data from one GPU cluster to the next is slow (8x slower than moving within the cluster): Reiner estimates it to take 10ms, which is huge considering that one forward pass is expected to take 20ms.
 
-Let’s first explore its effect on latency - pipeline makes latency worse:
-* Each step of the pipeline is executed sequentially, which means that in the naive setup the GPUs are waiting idle for other GPUs to solve their part of the computation. At inference, we can solve this by stacking batches in parallel (but it will have an effect on memory, see later). However at training time, we need to wait for the gradients so there is no solution.
-* The bandwidth to move from one cluster to the next is slow (8x more than within the same cluster). In the podcast they estimate it to be 10ms (which is huge given that one forward pass is estimated to take 20ms)
-
-Now let’s see to which extent pipelining helps with memory capacity:
-* The parameters are split between cluster, so the N params are divided by the number of clusters
-* However, the KV cache isn’t: each GPU should store the KV cache for bla-bla-bla
-
-Therefore pipelining seems to be something to avoid if necessary, and Ilya said “pipelining is not wise”
-
-Expert parallelism and GPU cluster architecture 
-
-Experts are distributed across GPUs, which leads to two all-to-all communication. However this communication is one fast bandwidth, so it’s not a bottleneck.
-
-At this point, Reiner explains a bit how NVIDIA GPU clusters are set up: there is a common VRAM (about ~todo Gb) and ~64 GPUs. The VRAM is accessible to all GPU so it can be thought as shared memory. When GPU load data from VRAM, they do it in parallel, so the cluster memory bandwidth really is the GPU bandwidth * the number of GPU. Increasing the number of GPU is actually where most of the gains in memory bandwidth come from - NVIDIA is working hard to increase the number of GPUs per cluster, and next generation should have ~todo
-
-Chinchilla laws, updated for inference
-
-The compute budget to train a model is broadly model size * number of tokens in the training data. If we have a given budget, how should we split it between model size and training data?
-
-Labs used to favour huge model size, but the Chinchilla paper changed everything: it showed empirically that the optimal is obtained at token number = 20 x model parameters.
-
-However, Reiner and Dwarkesh explain we are now in a “new Chinchilla” optimal, to take into account that the compute budget is now split between 3 parts: pre training, post training and inference.
-
-Broadly soaking, whichever model we get from pre training will have to be served at scale, so we’d rather serve a smaller model to reduce inference cost, even if that means training it for longer.
-
-Reiner does a back of the envelope calculation where he assumes that labs spend as much compute in pre training, RL training and inference. This broadly means that the number of tokens in pre training equals the number of tokens at inference. Let’s do some quick maths:
-
-Inference data = 500M/s * 2 months = 2.6 10^15
-Training data = 150 T (this number is confidential but Dwarkesh heard this from his connections at Anthropic)
-
-Those two are roughly equal! (Which validate the theory)
-
-And if we compare to Chinchila optimal: 100B * 20 = 2T
-
-So frontier models operate on 100x more training data than Chinchila optimal.
-
-Context length
-
-Gemini has a pricing structure where you pay 50% more after 200k context length.
-
-Cost increases with context length.
-
-Solving for bytes per token we get ~2kB
-
-Would that make sense? Well bytes per token = 2 bytes * 2 (key and query)* Nlayers * d heads * nb heads ~ 2kB
-
-I think Reiner is missing the bytes here, but we’re looking at orders of magnitude anyway.
-
-So it makes sense!
-
+[TODO: insert graph of pipelining across GPUs]
