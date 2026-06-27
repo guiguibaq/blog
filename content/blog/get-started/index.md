@@ -23,8 +23,8 @@ This post is a digested version with additional context when required.
 The **cost** of running an LLM is directly proportional to the **time** it takes to run inference: `cost per token = inference time per token * GPUs cost per time`.
 
 The whole episode is based on two main equations that estimate the time to run inference; this is split between:
-* **The time for loading memory** (i.e., loading from VRAM to SRAM): [TODO] 
-* **The time for compute**: actually computing the forward pass
+* **The time for loading memory** from VRAM (fast memory) to SRAM (where the computation is actually made)
+* **The time for compute**
 
 Let’s double click on the **memory**. There are two main operations:
 * Loading all the parameters of the model takes `t_params_loading = N_params * bytes_per_param / memory_bandwidth`
@@ -41,7 +41,7 @@ Finally, let's note that **memory and compute happen concurently** , so the time
 
 If `t_compute > t_memory`, we say that the system is “compute bound”, if that’s the opposite we say it’s “memory bound”.
 
-Great, we now have all the basics covered, and we understand the two fundamental equations of this podcast! The rest of the discussion is where Dwarkesh and Reiner actually use those two equations to make educated guesses on the parameters of LLMs at big labs.
+Great, we now have all the basics covered, and we understand the two fundamental equations of this podcast! The rest of the discussion is where Dwarkesh and Reiner  use those two equations to make educated guesses on the parameters of LLMs at big labs.
 
 # 2. Influence of batch size on costs
 
@@ -94,7 +94,7 @@ In expert parallelism, experts are distributed across GPUs. This leads to two al
 **Architecture of GPU clusters**
 Reiner explains how GPU clusters from NVIDIA are set-up: their flagship [NVL72](https://www.nvidia.com/en-us/data-center/gb200-nvl72/) contain 72 GPUs interconnected to about 20TB of VRAM. The VRAM is accessible to all GPUs, so it can be though as shared memory. When GPU load data from VRAM, they do it in parrallel, so the memory bandwidth at the cluster level is the memory bandwidth per GPU * the number of GPUs.
 
-# Chinchilla laws, updated for inference
+# 4. Chinchilla laws, updated for inference
 The compute budger to train a model is broadly `model size * number of tokens in training data`. Scaling laws answer the question: given a fixed budget, what is the optimal split between model size and number of tokens (e.g., should we prefer training a huge model and less data, or training a small model on larger data?). Frontier labs used to favour model size, but the [Chinchilla paper](https://arxiv.org/abs/2203.15556) changed this practice: is showed empirically that there is a consistent optimal, at `model size = 20 * number of tokens`.
 
 However, Reiner and Dwarkesh explain that we are now in a **"new Chinchilla optimal"**, because frontier labs split their compute budget into three parts: pre-training, post-training and inference. Broadly speaking, whichever model size is chosen, this model will have to be served, and serving a large model is more expensive than serving a small model - therefore **labs prefer using smaller models trained for longer**.
@@ -105,7 +105,7 @@ Assuming that a frontier lab generates 500 million tokens per second for their u
 
 The models at frontier labs probably have 100 billion parameters - Chinchilla optimal laws would recommend them to be trained on 20*100B = 2T tokens. But as we just saw they are trained on ~150T tokens, so about **100x more training data than Chinchila optimal!**
 
-# Context length
+# 5. Context length
 
 Gemini has a pricing structure where you pay 50% more after 200k context length; why is that?
 
