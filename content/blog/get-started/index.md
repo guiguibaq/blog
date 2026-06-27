@@ -113,10 +113,15 @@ Reiner show that, past a certain point, the cost per token increases linearly wi
 * `t_compute = batch * N_active_parameters / FLOPS` <= this does not depend on context length
 * `t_params_loading = N_params * bytes_per_param / memory_bandwidth` <= this does not depend on context length
 * `t_cache_loading = token_length * bytes_cached_per_token * batch / memory_bandwidth` <= this increases with token_length
+
 [TODO: insert graph]
 
 If we assume that the limit of 200k context length from Gemini corresponds to the point where the time starts to grow linearly with context length, then we can estimate the btyes per token of Gemini's KV cache. Let's ignore t_params_loading for simplicity:
-`t_cache_loading > `t_compute` <=> `bytes_caches_per_token > N_active_params * memory_bandwidth / (FLOPS * token_length)`
+`t_cache_loading > t_compute` <=> `bytes_caches_per_token > N_active_params * memory_bandwidth / (FLOPS * token_length)`
 with `memory_bandwidth / FLOPS = 1 / 200`, `N_active_params = 100B`, and `token_length = 200k`, we get `bytes_cached_per_token = 1.6kB`.
+
+Let's check that result through computing the size of the KV cache per token: for each layer (typically `N_layer ~ 80`), for each attention head (typically `n_head ~ 8`), for both the key and value of the attention (multiply by 2), we need to save an embedding (typically `d_head ~ 128`), with a typical precision of float16 (~2 bytes). Therefore we have `bytes_cached_per_token = N_layer * n)heads * d_heads * 2 * 2 ~ 327kB / token`.
+
+[Note: Reiner doesn't multiply by the number of layers, nor by the 2 bytes, which is why his result is 100x lower than mine. Either he is missing something, or I am, not quite sure].
 
 
