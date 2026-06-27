@@ -82,3 +82,25 @@ Let's first explore its effect on **latency**:
 * Moving data from one GPU cluster to the next is slow (8x slower than moving within the cluster): Reiner estimates it to take 10ms, which is huge considering that one forward pass is expected to take 20ms.
 
 [TODO: insert graph of pipelining across GPUs]
+
+Now let's see to which extent pipelining helps with **memory capacity**:
+* The parameters are split between cluster, so the N params are divided by the number of clusters
+* However, the KV cache capacity doesn't improve: each GPU needs to store the KV cache for all the batches that they are in charge off.
+
+**Expert parallelism**
+
+In expert parallelism, experts are distributed across GPUs. This leads to two all-to-all communication, but this is on fast bandwidth. When done correctly, expert parrallelism improves the compute latency without downside on the memory latency.
+
+**Architecture of GPU clusters**
+Reiner explains how GPU clusters from NVIDIA are set-up: their flagship [NVL72](https://www.nvidia.com/en-us/data-center/gb200-nvl72/) contain 72 GPUs interconnected to about 20TB of VRAM. The VRAM is accessible to all GPUs, so it can be though as shared memory. When GPU load data from VRAM, they do it in parrallel, so the memory bandwidth at the cluster level is the memory bandwidth per GPU * the number of GPUs.
+
+# Chinchilla laws, updated for inference
+The compute budger to train a model is broadly `model size * number of tokens in training data`. Scaling laws answer the question: given a fixed budget, what is the optimal split between model size and number of tokens (e.g., should we prefer training a huge model and less data, or training a small model on larger data?). Frontier labs used to favour model size, but the [Chinchilla paper](https://arxiv.org/abs/2203.15556) changed this practice: is showed empirically that there is a consistent optimal, at `model size = 20 * number of tokens`.
+
+However, Reiner and Dwarkesh explain that we are now in a **"new Chinchilla optimal"**, because frontier labs split their compute budget into three parts: pre-training, post-training and inference. Broadly speaking, whichever model size is chosen, this model will have to be served, and serving a large model is more expensive than serving a small model - therefore **labs prefer using smaller models trained for longer**.
+
+To demonstrate this, Reiner does a back of the envelope calculation, which he assumes that labs spend as much compute in pre-training, post-training, and serving. Because compute scales linearly with number of token, this is equivalent to assuming that labs use roughlty the same number of tokens to train their models, and to serve them.
+
+Assuming that a frontier lab generates 500 million tokens per second for their users, and that each model is available 2 months before being replaced by the next generagion, we get the the number of tokens for inference is `500M/sec * 2 months = 2.6 * 1e15`. Dwarkesh estimates that Anthropic models are trained on 150 trillion (1.5 * 1e14) tokens. As expected, those two are roughly equal!
+
+The models at frontier labs probably have 100 billion parameters - Chinchilla optimal laws would recommend them to be trained on 20*100B = 2T tokens. But as we just saw they are trained on ~150T tokens, so about **100x more training data than Chinchila optimal!**
