@@ -104,3 +104,19 @@ To demonstrate this, Reiner does a back of the envelope calculation, which he as
 Assuming that a frontier lab generates 500 million tokens per second for their users, and that each model is available 2 months before being replaced by the next generagion, we get the the number of tokens for inference is `500M/sec * 2 months = 2.6 * 1e15`. Dwarkesh estimates that Anthropic models are trained on 150 trillion (1.5 * 1e14) tokens. As expected, those two are roughly equal!
 
 The models at frontier labs probably have 100 billion parameters - Chinchilla optimal laws would recommend them to be trained on 20*100B = 2T tokens. But as we just saw they are trained on ~150T tokens, so about **100x more training data than Chinchila optimal!**
+
+# Context length
+
+Gemini has a pricing structure where you pay 50% more after 200k context length; why is that?
+
+Reiner show that, past a certain point, the cost per token increases linearly with the context lenght:
+* `t_compute = batch * N_active_parameters / FLOPS` <= this does not depend on context length
+* `t_params_loading = N_params * bytes_per_param / memory_bandwidth` <= this does not depend on context length
+* `t_cache_loading = token_length * bytes_cached_per_token * batch / memory_bandwidth` <= this increases with token_length
+[TODO: insert graph]
+
+If we assume that the limit of 200k context length from Gemini corresponds to the point where the time starts to grow linearly with context length, then we can estimate the btyes per token of Gemini's KV cache. Let's ignore t_params_loading for simplicity:
+`t_cache_loading > `t_compute` <=> `bytes_caches_per_token > N_active_params * memory_bandwidth / (FLOPS * token_length)`
+with `memory_bandwidth / FLOPS = 1 / 200`, `N_active_params = 100B`, and `token_length = 200k`, we get `bytes_cached_per_token = 1.6kB`.
+
+
