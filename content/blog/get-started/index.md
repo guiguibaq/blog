@@ -68,29 +68,28 @@ There are several types of GPU parallelism worth noting:
 * **Pipelining**: the neural network is split into sequential chunks, which are executed one after the other. Dwarkesh and Reiner discuss it, and explain why it is avoided when possible.
 * **Expert parallelism**: experts are distributed across GPUs.
 
-Let's start with **pipelining**.
+## 3.1. Pipelining
 
 If we do naive pipelining, where we wait for each batch to be complete, most of the GPUs are waiting idle for the next batch, which is very wastefull.
+
+
 <img width="687" height="277" alt="image" src="https://github.com/user-attachments/assets/c944c659-5c8c-469e-af37-5c0c93b277e8" />
 
+Instead, we can ladder the batches can be laddered, which make the GPUs work continuously:
 
-Pipelining contributes to solving the momeory capacity, but it has a tool on latency.
+<img width="670" height="280" alt="image" src="https://github.com/user-attachments/assets/d2284968-0607-4874-ac99-384e2a20d6a8" />
 
-Let's first explore its effect on **latency**:
-* Each step of the pipeline is executed sequentially, which means that in the naive setup the GPUs are waiting idle for other GPUs to solve their part of the computation. At inference, we can solve this by stacking batches in parallel (see graph below) - however as we'll see this has a consequence on memory usage. At training time, because we have to wait on the gradients, unfortunately there is no other solution than having the GPUs idle for some time (see graph below).
-* Moving data from one GPU cluster to the next is slow (8x slower than moving within the cluster): Reiner estimates it to take 10ms, which is huge considering that one forward pass is expected to take 20ms.
+Note that the laddering isn't possible at training time, since each GPU has to wait for the subsequent one to send back the gradients:
 
-[TODO: insert graph of pipelining across GPUs]
+<img width="628" height="226" alt="image" src="https://github.com/user-attachments/assets/239f5a82-9bed-4513-9e44-bad59febf994" />
 
-Now let's see to which extent pipelining helps with **memory capacity**:
-* The parameters are split between cluster, so the N params are divided by the number of clusters
-* However, the KV cache capacity doesn't improve: each GPU needs to store the KV cache for all the batches that they are in charge off.
+Effect of pipelining on time and capacity:
+* **The compute time is worse**, because the bandwidth to transfer the batch from one GPU cluster to another is slow (8x slower than within a cluster): Reiner estimates that is takes 10ms to transfer one batch from a cluster to the next, which is huge considering that one forward pass is expected to take 20ms.
+* **The capacity (and memory time) for parameter loading is better**, because each GPU cluster is in charge of less parameters
+* **The capacity (and memory time) for KV cache loading is the same**, because each GPU cluster is in charge of the same number of inference examples at a given time
 
-**Expert parallelism**
+## 3.2. Architecture of GPU clusters
 
-In expert parallelism, experts are distributed across GPUs. This leads to two all-to-all communication, but this is on fast bandwidth. When done correctly, expert parrallelism improves the compute latency without downside on the memory latency.
-
-**Architecture of GPU clusters**
 Reiner explains how GPU clusters from NVIDIA are set-up: their flagship [NVL72](https://www.nvidia.com/en-us/data-center/gb200-nvl72/) contain 72 GPUs interconnected to about 20TB of VRAM. The VRAM is accessible to all GPUs, so it can be though as shared memory. When GPU load data from VRAM, they do it in parrallel, so the memory bandwidth at the cluster level is the memory bandwidth per GPU * the number of GPUs.
 
 # 4. Chinchilla laws, updated for inference
