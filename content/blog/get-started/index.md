@@ -37,7 +37,7 @@ Now let’s look at the **compute** time:
 * Modern LLMs use Mixture of Experts (MoE), where the Feed Foward after the attention is split into parallel networks, and a learnt gate routes each incoming token to its relevant expert(s). Therefore with MOEs a forward pass requires less computation: we should only acount for the "active" parameters (i.e., we do not count the parameters of the experts that are not used).
 * Therefore the computation time is `t_compute = batch * N_active_params / FLOPS`.
 
-Finally, let's note that **memory and compute happen concurently** , so the time for one forward pass is the max of both (instead of the sum): `t_forward = max (t_compute, t_memory)
+Finally, let's note that **memory and compute happen concurently** , so the time for one forward pass is the max of both (instead of the sum): `t_forward = max (t_compute, t_memory)`
 
 If `t_compute > t_memory`, we say that the system is “compute bound”, if that’s the opposite we say it’s “memory bound”.
 
@@ -45,26 +45,21 @@ Great, we now have all the basics covered, and we understand the two fundamental
 
 # 2. Influence of batch size on costs
 
-Let’s double click on the notion of batch at inference:
-* At training time a batch is a subset of the training data
-* At inference time, we can batch user requests together: we wait for instance 20 ms, get all the user requests at this time, and batch them together.
+What does Reiner even mean by "batch size" at inference time?
+* At training time a batch is obviously a subset of the training data
+* At inference time, user requests are clubbed together in a batch: we wait for instance 20 ms, get all the user requests at this time, and batch them together. Note that we don't quite batch the "user requests" by the "token requests": maybe one answer will take only 100 tokens, while another will take 10k tokens.
 
-The more we wait, the larger the batch size we get, and intuitively, the best economies of scale we might get. But is that really true?
+The more we wait, the larger the batch size we get, and one might think, the best economies of scale we might get. But is that really true? Turns out, it's not that simple: **cost per token only reduces with batch size for regimes of low batch size: past a given point, the cost per token is flat, and increasing batch size doesn't birng any gain.**
 
-Said differently: Gemini has a fast inference mode, which presumably is linked to lower batch size; can we imagine the opposite: a “slow mode" where the price per token drops? Turns out, **costs only reduces with batch size for regimes of low batch size: past a given point, the cost is batch size is flat.**
-
-Let's see why by representing t_forward as of batch_size: 
+Let's see why looking at how t_forward changes when batch_size increases: 
 * `t_params_loading / batch = N_params * bytes_per_param / (memory_bandwidth * batch)` <= this decreases when batch increases
 * `t_cache_loading / batch = token_lenght * bytes_cached_per_token / memory_bandwidth` <= this is fixed
 * `t_compute / batch = N_active_params / FLOPS` <= this is fixed
 
-[todo: insert graph]
+So first the cost per token decrease when we increase the batch size, then it becomes stable - at this point, increasing batch size just means that the end user are waiting longer for each batch to start-. The ideal batch size is at the point where cost per token stabilises - in my [simulations](https://colab.research.google.com/drive/1VRZ6jYPpkdm9Nn0tSF24ewvKL8RjzfPs) I find it to be around 5k, which isn't far to Reiner's whiteboard calculations in the Podcast [todo: check by listening the podcast]. At this ideal point, the forward time per token is 1e-7s or 0.5ms per token [todo: check if that's correct].
 
-As we see, increasing the batch amortises the loading of the parameters, but it doesn't reduce the cost per token for compute or the KV cache.
+<img width="1012" height="547" alt="image" src="https://github.com/user-attachments/assets/9b2cb1f4-bd63-402b-9dd0-862382544b92" />
 
-While we discuss batch size, can we **estimate the ideal batch size**? In the ideal case, the system is neither memory nor copmute bound: `t compute = t memory`.
-Ignoring the KV cache for simplicity, this leads to `batch * N_active / FLOPS = N_total / memory_bandwith`, or `FLOPS / memory_bandwith = batch * N_active / N_total`.
-Plugging typical values: `FLOPS / memory_bandwith = 300` and `N_active / N_total = 1 / 8` we get `ideal_batch_size = 24k`.
 
 # 3. GPU parallelisation
 There are several types of GPU parallelism worth noting:
@@ -74,6 +69,10 @@ There are several types of GPU parallelism worth noting:
 * **Expert parallelism**: experts are distributed across GPUs.
 
 Let's start with **pipelining**.
+
+If we do naive pipelining, where we wait for each batch to be complete, most of the GPUs are waiting idle for the next batch, which is very wastefull.
+<img width="687" height="277" alt="image" src="https://github.com/user-attachments/assets/c944c659-5c8c-469e-af37-5c0c93b277e8" />
+
 
 Pipelining contributes to solving the momeory capacity, but it has a tool on latency.
 
