@@ -93,13 +93,15 @@ Effect of pipelining on time and capacity:
 Reiner explains how GPU clusters from NVIDIA are set-up: their flagship [NVL72](https://www.nvidia.com/en-us/data-center/gb200-nvl72/) contain 72 GPUs interconnected to about 20TB of VRAM. The VRAM is accessible to all GPUs, so it can be though as shared memory. When GPU load data from VRAM, they do it in parrallel, so the memory bandwidth at the cluster level is the memory bandwidth per GPU * the number of GPUs.
 
 # 4. Chinchilla laws, updated for inference
-The compute budger to train a model is broadly `model size * number of tokens in training data`. Scaling laws answer the question: given a fixed budget, what is the optimal split between model size and number of tokens (e.g., should we prefer training a huge model and less data, or training a small model on larger data?). Frontier labs used to favour model size, but the [Chinchilla paper](https://arxiv.org/abs/2203.15556) changed this practice: is showed empirically that there is a consistent optimal, at `model size = 20 * number of tokens`.
+The compute budger to train a model is broadly `model_size * number_of_tokens_in_training_data`.
+
+Scaling laws answer the question: given a fixed budget, what is the optimal split between model size and number of tokens (e.g., should we prefer training a huge model and less data, or training a small model on larger data?). Frontier labs used to favour model size, but the [Chinchilla paper](https://arxiv.org/abs/2203.15556) changed this practice: is showed empirically that there is a consistent optimal, at `model size = 20 * number of tokens`.
 
 However, Reiner and Dwarkesh explain that we are now in a **"new Chinchilla optimal"**, because frontier labs split their compute budget into three parts: pre-training, post-training and inference. Broadly speaking, whichever model size is chosen, this model will have to be served, and serving a large model is more expensive than serving a small model - therefore **labs prefer using smaller models trained for longer**.
 
 To demonstrate this, Reiner does a back of the envelope calculation, which he assumes that labs spend as much compute in pre-training, post-training, and serving. Because compute scales linearly with number of token, this is equivalent to assuming that labs use roughlty the same number of tokens to train their models, and to serve them.
 
-Assuming that a frontier lab generates 500 million tokens per second for their users, and that each model is available 2 months before being replaced by the next generagion, we get the the number of tokens for inference is `500M/sec * 2 months = 2.6 * 1e15`. Dwarkesh estimates that Anthropic models are trained on 150 trillion (1.5 * 1e14) tokens. As expected, those two are roughly equal!
+Assuming that a frontier lab generates 500 million tokens per second for their users, and that each model is available 2 months before being replaced by the next generagion, we get that the number of tokens for inference is `50M/sec * 2 months = 2.6 * 1e14`. Dwarkesh estimates that Anthropic models are trained on 150 trillion (1.5 * 1e14) tokens. As expected, those two are roughly equal!
 
 The models at frontier labs probably have 100 billion parameters - Chinchilla optimal laws would recommend them to be trained on 20*100B = 2T tokens. But as we just saw they are trained on ~150T tokens, so about **100x more training data than Chinchila optimal!**
 
@@ -116,7 +118,7 @@ Reiner show that, past a certain point, the cost per token increases linearly wi
 
 If we assume that the limit of 200k context length from Gemini corresponds to the point where the time starts to grow linearly with context length, then we can estimate the btyes per token of Gemini's KV cache. Let's ignore t_params_loading for simplicity:
 `t_cache_loading > t_compute` <=> `bytes_caches_per_token > N_active_params * memory_bandwidth / (FLOPS * token_length)`
-with `memory_bandwidth / FLOPS = 1 / 200`, `N_active_params = 100B`, and `token_length = 200k`, we get `bytes_cached_per_token = 1.6kB`.
+with `memory_bandwidth / FLOPS = 1 / 300`, `N_active_params = 100B`, and `token_length = 200k`, we get `bytes_cached_per_token = 1.6kB`.
 
 Let's check that result through computing the size of the KV cache per token: for each layer (typically `N_layer ~ 80`), for each attention head (typically `n_head ~ 8`), for both the key and value of the attention (multiply by 2), we need to save an embedding (typically `d_head ~ 128`), with a typical precision of float16 (~2 bytes). Therefore we have `bytes_cached_per_token = N_layer * n)heads * d_heads * 2 * 2 ~ 327kB / token`.
 
