@@ -16,7 +16,7 @@ In this [podcast episode](https://open.spotify.com/episode/3N57gipYtcVPt2Y14Rnhs
 
 The episode is very information dense, and assumes prior knowledge of the inner workings of LLMs. I wrote here my key take-aways, along with additional context when required.
 
-# 1. Basics: time for generating one token
+## 1. Basics: time for generating one token
 
 The **cost** of running an LLM is directly proportional to the **time** it takes to run inference: `cost per token = inference time per token * GPUs cost per time`.
 
@@ -41,7 +41,7 @@ If `t_compute > t_memory`, we say that the system is “compute bound”, if tha
 
 Great, we now have all the basics covered, and we understand the two fundamental equations of this podcast! The rest of the discussion is where Dwarkesh and Reiner  use those two equations to make educated guesses on the parameters of LLMs at big labs.
 
-# 2. Influence of batch size on costs
+## 2. Influence of batch size on costs
 
 What does Reiner even mean by "batch size" at inference time?
 * At training time a batch is obviously a subset of the training data
@@ -62,14 +62,14 @@ With this batch size, how long does a forward take? We can just read the y-axis 
 
 
 
-# 3. GPU parallelisation
+## 3. GPU parallelisation
 There are several types of GPU parallelism worth noting:
 * **Data parallelism**: classic sharding - requests are sent to different GPUs (or clusters of GPUs) and executed in parallel. This isn't talked about in the podcast.
 * **Tensor parallelism**: the weights of each matrix are split across GPUs, each GPU does a part of the computation, then the outputs are combined in an all to all communication. This isn't talked about either, but is widely used in production.
 * **Pipelining**: the neural network is split into sequential chunks, which are executed one after the other. Dwarkesh and Reiner discuss it, and explain why it is avoided when possible.
 * **Expert parallelism**: experts are distributed across GPUs.
 
-## 3.1. Pipelining
+### 3.1. Pipelining
 
 If we do naive pipelining, where we wait for each batch to be complete, most of the GPUs are waiting idle for the next batch, which is very wastefull.
 
@@ -89,11 +89,11 @@ Effect of pipelining on time and capacity:
 * **The capacity (and memory time) for parameter loading is better**, because each GPU cluster is in charge of less parameters
 * **The capacity (and memory time) for KV cache loading is the same**, because each GPU cluster is in charge of the same number of inference examples at a given time
 
-## 3.2. Architecture of GPU clusters
+### 3.2. Architecture of GPU clusters
 
 Reiner explains how GPU clusters from NVIDIA are set-up: their flagship [NVL72](https://www.nvidia.com/en-us/data-center/gb200-nvl72/) contain 72 GPUs interconnected to about 20TB of VRAM. The VRAM is accessible to all GPUs, so it can be though as shared memory. When GPU load data from VRAM, they do it in parrallel, so the memory bandwidth at the cluster level is the memory bandwidth per GPU * the number of GPUs.
 
-# 4. Chinchilla laws, updated for inference
+## 4. Chinchilla laws, updated for inference
 The compute budger to train a model is broadly `model_size * number_of_tokens_in_training_data`.
 
 Scaling laws answer the question: given a fixed budget, what is the optimal split between model size and number of tokens (e.g., should we prefer training a huge model and less data, or training a small model on larger data?). Frontier labs used to favour model size, but the [Chinchilla paper](https://arxiv.org/abs/2203.15556) changed this practice: is showed empirically that there is a consistent optimal, at `model size = 20 * number of tokens`.
@@ -106,7 +106,7 @@ Assuming that a frontier lab generates 500 million tokens per second for their u
 
 The models at frontier labs probably have 100 billion parameters - Chinchilla optimal laws would recommend them to be trained on 20*100B = 2T tokens. But as we just saw they are trained on ~150T tokens, so about **100x more training data than Chinchila optimal!**
 
-# 5. Context length
+## 5. Context length
 
 Gemini has a pricing structure where you pay 50% more after 200k context length; why is that?
 
