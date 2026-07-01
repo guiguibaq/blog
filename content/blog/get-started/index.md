@@ -12,11 +12,9 @@ authors:
   - me
 ---
 
-In this podcast Dwarkesh and Reiner deduce key parameters of how inference is run at frontier labs (eg batch size, parallelism, size of models) from simple cost analysis.
+In this [podcast episode](https://open.spotify.com/episode/3N57gipYtcVPt2Y14RnhsN?si=bd6f08a8cdcc4025) Dwarkesh and Reiner deduce key parameters of how inference is run at frontier labs (eg batch size, parallelism, size of models) from simple cost analysis.
 
-The episode is very dense in information, and assumes prior knowledge of the inner workings of LLMs.
-
-This post is a digested version with additional context when required.
+The episode is very information dense, and assumes prior knowledge of the inner workings of LLMs. I wrote here my key take-aways, along with additional context when required.
 
 # 1. Basics: time for generating one token
 
