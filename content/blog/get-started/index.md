@@ -56,9 +56,12 @@ Let's see why looking at how t_forward changes when batch_size increases:
 * `t_cache_loading / batch = token_lenght * bytes_cached_per_token / memory_bandwidth` <= this is fixed
 * `t_compute / batch = N_active_params / FLOPS` <= this is fixed
 
-So first the cost per token decrease when we increase the batch size, then it becomes stable - at this point, increasing batch size just means that the end user are waiting longer for each batch to start-. The ideal batch size is at the point where cost per token stabilises - in my [simulations](https://colab.research.google.com/drive/1VRZ6jYPpkdm9Nn0tSF24ewvKL8RjzfPs) I find it to be around 5k, which isn't far to Reiner's whiteboard calculations in the Podcast [todo: check by listening the podcast]. At this ideal point, the forward time per token is 1e-7s or 0.5ms per token [todo: check if that's correct].
+So first the cost per token decrease when we increase the batch size, then it becomes stable - at this point, increasing batch size just means that the end user are waiting longer for each batch to start-. The ideal batch size is at the point where cost per token stabilises - in my [simulations](https://colab.research.google.com/drive/1VRZ6jYPpkdm9Nn0tSF24ewvKL8RjzfPs) I find it to be around 2.4k, which isn't far to Reiner's whiteboard calculations in the Podcast.
 
-<img width="1012" height="547" alt="image" src="https://github.com/user-attachments/assets/9b2cb1f4-bd63-402b-9dd0-862382544b92" />
+With this batch size, how long does a forward take? We can just read the y-axis and multiply by the number of tokens generated: the inputs I used in my simulation  give me about 3ms, while Reiner mentions 20ms. Using Reiner's numbers, this means that we accumulate all the queries arriving for 20ms, and then batch them together on the next forward.
+
+<img width="1001" height="547" alt="image" src="https://github.com/user-attachments/assets/185c2868-a07c-4593-bf4a-cb20b0c8da68" />
+
 
 
 # 3. GPU parallelisation
@@ -114,14 +117,13 @@ Reiner show that, past a certain point, the cost per token increases linearly wi
 * `t_params_loading = N_params * bytes_per_param / memory_bandwidth` <= this does not depend on context length
 * `t_cache_loading = token_length * bytes_cached_per_token * batch / memory_bandwidth` <= this increases with token_length
 
-[TODO: insert graph]
+<img width="1018" height="547" alt="image" src="https://github.com/user-attachments/assets/01bfd48d-911a-493a-b287-42fa58943ada" />
+
 
 If we assume that the limit of 200k context length from Gemini corresponds to the point where the time starts to grow linearly with context length, then we can estimate the btyes per token of Gemini's KV cache. Let's ignore t_params_loading for simplicity:
 `t_cache_loading > t_compute` <=> `bytes_caches_per_token > N_active_params * memory_bandwidth / (FLOPS * token_length)`
 with `memory_bandwidth / FLOPS = 1 / 300`, `N_active_params = 100B`, and `token_length = 200k`, we get `bytes_cached_per_token = 1.6kB`.
 
-Let's check that result through computing the size of the KV cache per token: for each layer (typically `N_layer ~ 80`), for each attention head (typically `n_head ~ 8`), for both the key and value of the attention (multiply by 2), we need to save an embedding (typically `d_head ~ 128`), with a typical precision of float16 (~2 bytes). Therefore we have `bytes_cached_per_token = N_layer * n)heads * d_heads * 2 * 2 ~ 327kB / token`.
+Let's check that result through computing the size of the KV cache per token: for each layer (typically `N_layer ~ 80`), for each attention head (typically `n_head ~ 8`), for both the key and value of the attention (multiply by 2), we need to save an embedding (typically `d_head ~ 128`), with a typical precision of float16 (~2 bytes). Therefore we have `bytes_cached_per_token = N_layer * n_heads * d_heads * 2 * 2 ~ 327kB / token`. This is 100x bigger than what we previously found!
 
-[Note: Reiner doesn't multiply by the number of layers, nor by the 2 bytes, which is why his result is 100x lower than mine. Either he is missing something, or I am, not quite sure].
-
-
+Reiner mentions that there are techniques to reduce the size of the KV cache (see CharacterAI's [blogpost](https://blog.character.ai/optimizing-ai-inference-at-character-ai-2/)): for instance the values can be shared accross layers. Those optimisations lead to a KV cache that can be in the order of 1.6kB.
