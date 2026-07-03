@@ -118,7 +118,7 @@ hugoblox:
     license:
       type: cc # cc | custom
       allow_derivatives: false
-      share_alike: true
+      share_alike: false
       allow_commercial: false
 
   # ────────────────────────────────────────────────────────────────────────────
