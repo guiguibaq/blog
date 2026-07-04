@@ -2,6 +2,7 @@
 title: Digest of "The math behind how LLMs are trained and served"
 summary: 
 date: 2026-07-01
+view: 2
 
 # Featured image
 # Place an image named `featured.jpg/png` in this page's folder and customize its options here.
