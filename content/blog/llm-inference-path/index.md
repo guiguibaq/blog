@@ -1,5 +1,5 @@
 ---
-title: Diggest of "The math behind how LLMs are trained and served"
+title: Digest of "The math behind how LLMs are trained and served"
 summary: 
 date: 2026-07-01
 
