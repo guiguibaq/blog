@@ -6,8 +6,6 @@ date: '2026-07-05'
 
 [Spelling Bee](https://www.nytimes.com/puzzles/spelling-bee) is a game by New York Time where you have to create as many words as possible given 7 distinct letters, including one (the central one) that you must use.
 
-![Spelling Bee](https://static01.nyt.com/images/2022/08/11/14morning-bee-april-6/oakImage-1660249828142-articleLarge.png?quality=75&auto=webp&disable=upscale)
-
 Let's solve it programatically:
 * The naive approach is simple: iterate through all the English words, check if they follow the game rules (use only the accepted letters, use the central letter, use more than 3 characters), and save the words that do. The runtime complexity is O(#words in English * avg length of word)
 * We can improve runtime by building a [Trie](https://en.wikipedia.org/wiki/Trie) of all the words in English, and exploring it in depth first first with backtracking. This scales in O(#valid words * avg length of word), which gives a nice 100x speed-up!
