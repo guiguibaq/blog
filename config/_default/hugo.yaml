@@ -23,7 +23,7 @@ cascade:
     reading_time: true
     commentable: true
     show_related: true
-    share: true
+    share: false
     # Just use Breadcrumb for navigation on blog post pages?
     show_breadcrumb: false
     header:
