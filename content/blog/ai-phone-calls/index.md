@@ -12,7 +12,7 @@ authors:
 ---
 
 Can you plug an AI into the telephone network and have it hold a real
-conversation? I wanted to find out — and, more interesting to me, to see how
+conversation? I wanted to find out; and more interesting to me, to see how
 people react when the phone rings and it isn't a person.
 
 **The tech part turned out to be relatively easy:** a weekend's work with Claude's help, and a few dollars in OpenAI and Twilio credits.
