@@ -85,18 +85,9 @@ polite assistant with an obvious purpose.
 
 > One note from my personal tests: in my mind, **the AI does not pass the Turing test yet** (although it's very close). The voice is excellent and the reactions are convincing, but something is slightly off (e.g., a small lag before it answers, a delivery that is too clean, no stumbles or half-finished words). It doesn’t quite flow the way people do. 
 
-## Next directions
+## The scary part
 
-There are three directions I'm curious about.
-
-**Give it a real task.** Booking a restaurant is the obvious test: the other end
-is expecting a transaction rather than a chat, which is exactly the mode that
-seems to work.
-
-**Stop people from hanging up.** Now that I know small talk is what breaks it, there's
-a lot to try (e.g., the introduction, how fast the AI answers or changes topic) to make it sound more natural.
-
-**Evaluating the risks of misuse.** With this technology a bad actor can **jam phone lines, and for very cheap**. Imagine an AI that is good enough to sound *plausibly* human. It can call a business and hold the line, going on with the operator about some junk. Even if the operator suspects the caller sounds weird, operators are trained not to hang up; so they hold the line, blocking real humans from getting through.
+With this technology a bad actor can **jam phone lines, and for very cheap**. Imagine an AI that is good enough to sound *plausibly* human. It can call a business and hold the line, going on with the operator about some junk. Even if the operator suspects the caller sounds weird, operators are trained not to hang up; so they hold the line, blocking real humans from getting through.
 
 This type of attack is not new; it's known as Telephony Denial of Service (TDoS). What is new is how cheap they are to run: before the attacker had to pay humans for each line they were holding; now they can just spin up several AI agents for **~5 cents per minute per line**.
 
@@ -113,6 +104,17 @@ The 911 example is the most worrying to me:
 2. the defense is probably the hardest: 911 operators cannot just hang up if they find the caller weird (what if it's a real human on the line?)
 3. only sophisticated actors (state-level) would attempt something this serious and this illegal,  but those are exactly the ones who can strip every tell: no watermark, real US phone lines, a voice tuned to sound like a genuine emergency, etc.
 
-I am not yet sure which safeguard can be put in place on the defending side, and that's something I want to explore next.
-
 *To state the obvious: running any of this against a real business or emergency line is illegal, and this section is about why we should worry, not a recipe.*
+
+## Next directions
+
+There are three directions I'm curious about.
+
+**Give it a real task.** Booking a restaurant is the obvious test: the other end
+is expecting a transaction rather than a chat, which is exactly the mode that
+seems to work.
+
+**Stop people from hanging up.** Now that I know small talk is what breaks it, there's
+a lot to try (e.g., the introduction, how fast the AI answers or changes topic) to make it sound more natural.
+
+**Explore defences.** I am not yet sure which safeguard can be put in place on the defending side of the Denial of Service, and that's something I want to explore next.
