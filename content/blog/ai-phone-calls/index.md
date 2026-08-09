@@ -31,6 +31,8 @@ uv run call --contact alex --prompt catchup-dinner --dry-run   # rings you
 uv run call --contact alex --prompt catchup-dinner --run       # rings Alex
 ```
 
+*(make sure you test it on people willing to participate, and that you are familiar with the legalities of automated calls)*
+
 The whole thing is three moving parts. A script asks **Twilio** to place the
 call. When the person answers, Twilio calls back to a small server on my laptop
 (reachable through a tunnel), which speaks the AI disclosure and then opens a
