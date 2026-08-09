@@ -1,4 +1,33 @@
+/* Loaded after the theme bundle, so plain selectors win — no !important needed. */
+
 .prose code::before,
 .prose code::after {
     content: none !important;
+}
+
+/* ── Article typography ──────────────────────────────────────────────────────
+   The theme applies `prose lg:prose-xl`, which sets 1.25rem text capped at
+   Tailwind's default 65ch measure. On a wide screen that leaves most of the
+   page empty while the text itself is oversized.
+
+   Two knobs below — adjust to taste:
+     --article-measure : how wide the column gets
+     font-size         : body text size on desktop
+*/
+
+:root {
+    --article-measure: 56rem; /* ~896px. Try 48rem for narrower, 64rem wider. */
+}
+
+.prose {
+    max-width: var(--article-measure);
+}
+
+@media (min-width: 64rem) {
+    /* Overrides lg:prose-xl (1.25rem). Headings are sized in `em`, so they
+       scale down proportionally with this. */
+    .prose {
+        font-size: 1.0625rem; /* 17px. Was 20px. */
+        line-height: 1.7;
+    }
 }
