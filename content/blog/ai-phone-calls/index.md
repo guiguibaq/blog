@@ -1,6 +1,6 @@
 ---
 title: Nestor - the AI in the phone
-summary: Wiring an AI into the telephone network turns out to be easy. Getting people to enjoy talking to it is the hard part.
+summary: Wiring an AI into the telephone network turns out to be easy. Getting people to enjoy talking to it is the hard part. And the scary bit is how it can be misused.
 date: 2026-08-09
 
 # Featured image
