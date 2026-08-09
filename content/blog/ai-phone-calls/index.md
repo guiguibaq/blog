@@ -112,11 +112,11 @@ The 911 example is the most worrying to me:
 
 There are three directions I'm curious about.
 
-**Give it a real task.** Booking a restaurant is the obvious test: the other end
+**Give Nestor a real task.** Booking a restaurant is the obvious test: the other end
 is expecting a transaction rather than a chat, which is exactly the mode that
 seems to work.
 
-**Stop people from hanging up.** Now that I know small talk is what breaks it, there's
+**Making it more natural.** Now that I know small talk is what breaks the human interaction, there's
 a lot to try (e.g., the introduction, how fast the AI answers or changes topic) to make it sound more natural.
 
-**Explore defences.** I am not yet sure which safeguard can be put in place on the defending side of the Denial of Service, and that's something I want to explore next.
+**Defend against misuse.** I am not yet sure which safeguard can be put in place on the defending side of the Denial of Service, and that's something I want to explore next.
