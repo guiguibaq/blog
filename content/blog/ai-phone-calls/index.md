@@ -111,7 +111,7 @@ Back of the envelope estimate, here is how cheap it would be to completely jam d
 The 911 example is the most worrying to me:
 1. the consequences are obviously the worst (e.g., panic, deaths)
 2. the defense is probably the hardest: 911 operators cannot just hang up if they find the caller weird (what if it's a real human on the line?)
-3. only sophisticated actors (state-level) would attempt something this serious and this illegal — but those are exactly the ones who can strip every tell: no watermark, real US phone lines, a voice tuned to sound like a genuine emergency, etc.
+3. only sophisticated actors (state-level) would attempt something this serious and this illegal,  but those are exactly the ones who can strip every tell: no watermark, real US phone lines, a voice tuned to sound like a genuine emergency, etc.
 
 I am not yet sure which safeguard can be put in place on the defending side, and that's something I want to explore next.
 
